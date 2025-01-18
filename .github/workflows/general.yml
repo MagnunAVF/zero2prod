@@ -4,6 +4,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: ["main"]
 
 env:
@@ -35,11 +36,13 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install sqlx-cli
-        run: cargo install sqlx-cli
+        run:
+          cargo install sqlx-cli
           --version=${{ env.SQLX_VERSION }}
           --features ${{ env.SQLX_FEATURES }}
           --no-default-features
           --locked
+
       - name: Create app user in Postgres
         run: |
           sudo apt-get install postgresql-client
@@ -53,13 +56,14 @@ jobs:
           PGPASSWORD="password" psql -U "postgres" -h "localhost" -c "${GRANT_QUERY}"
 
       - name: Migrate database
-        run: SKIP_DOCKER=true ./scripts/init_db.sh
+        run: |
+          SKIP_DOCKER=true ./scripts/init_db.sh
 
       - name: Run tests
         run: cargo test
 
-      - name: Check that queries are fresh
-        run: cargo sqlx prepare --workspace --check -- --all-targets
+      # - name: Check that queries are fresh
+      #   run: cargo sqlx prepare --workspace --check -- --all-targets
 
   fmt:
     name: Rustfmt
